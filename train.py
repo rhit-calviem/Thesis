@@ -57,7 +57,6 @@ def main():
     visualize_and_save_result(model, test_dataset, DEVICE)
     print(f"\nVisualization saved to 'sr_visualization.png'.")
 
-
 if __name__ == '__main__':
     main()
 
