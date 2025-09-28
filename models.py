@@ -12,8 +12,18 @@ class Model(nn.Module):
             nn.Conv2d(64, 3 * (upscale_factor ** 2), kernel_size=3, padding=1),
             nn.PixelShuffle(upscale_factor)
         )
+        
+        # Initialize weights
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.upsample(x)
         return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
