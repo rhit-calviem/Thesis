@@ -19,14 +19,13 @@ import matplotlib.gridspec as gridspec
 from config import *
 
 def _to_y_channel(tensor):
-    """
-    Convert RGB tensor (C,H,W) in [0,1] to Y channel tensor.
-    """
+    # Convert RGB tensor (C,H,W) in [0,1] to Y channel tensor - had to look at paper and code to understand this
     pil_img = T.ToPILImage()(tensor.cpu().clamp(0,1))
     y, _, _ = pil_img.convert("YCbCr").split()
     return T.ToTensor()(y)  # shape (1, H, W)
 
 def calculate_psnr(original, compressed):
+    # Calculate PSNR between two images (tensors) in [0,1] range only Y channel
     original_y = _to_y_channel(original)
     compressed_y = _to_y_channel(compressed)
     orig_np, comp_np = original_y.numpy(), compressed_y.numpy()
@@ -36,11 +35,13 @@ def calculate_psnr(original, compressed):
     return 20 * math.log10(1.0 / math.sqrt(mse))
 
 def calculate_mse(original, compressed):
+    # Calculate MSE between two images (tensors) in [0,1] range only Y channel
     original_y = _to_y_channel(original)
     compressed_y = _to_y_channel(compressed)
     return np.mean((original_y.numpy() - compressed_y.numpy()) ** 2)
 
 def calculate_ssim(img1, img2, window_size=11, C1=0.01**2, C2=0.03**2):
+    # Calculate SSIM between two images (tensors) in [0,1] range only Y channel
     img1_y = _to_y_channel(img1).unsqueeze(0)  # (1,1,H,W)
     img2_y = _to_y_channel(img2).unsqueeze(0)
     mu1 = F.avg_pool2d(img1_y, window_size, stride=1, padding=window_size//2)
@@ -55,15 +56,15 @@ def calculate_ssim(img1, img2, window_size=11, C1=0.01**2, C2=0.03**2):
 
 
 def visualize_and_save_result(model, dataset_or_path, device, save_path='sr_visualization.png'):
-    """
-    Visualizes:
-    - If dataset_or_path is a dataset -> pick random sample.
-    - If dataset_or_path is a string path -> load that image directly.
-    """
+    # Visualiz:
+    # - If dataset_or_path is a dataset -> pick random sample.
+    # - If dataset_or_path is a string path -> load that image directly.
+
     model.eval()
     to_pil = T.ToPILImage()
 
     if isinstance(dataset_or_path, str):  # image path
+        # Load image, super-resolve, convert to PIL
         img = Image.open(dataset_or_path).convert("RGB")
         lr_img = img.resize((img.width // UPSCALE_FACTOR, img.height // UPSCALE_FACTOR), Image.BICUBIC)
         lr_tensor = T.ToTensor()(lr_img).unsqueeze(0).to(device)
@@ -77,6 +78,7 @@ def visualize_and_save_result(model, dataset_or_path, device, save_path='sr_visu
         filename = os.path.basename(dataset_or_path)
 
     else:  # dataset case
+        # else, pick random sample from dataset, super-resolve, convert to PIL
         idx = random.randint(0, len(dataset_or_path) - 1)
         lr_image_tensor, hr_image_tensor, filename = dataset_or_path[idx]
 

@@ -7,6 +7,7 @@ from models import Model
 from utils_data import get_test_dataset
 from utils import calculate_psnr, calculate_mse, calculate_ssim
 
+# Evaluation function - specify dataset as command line argument
 def main(dataset_name="Set5"):
     print(f"Evaluating on {dataset_name} with model {MODEL_SAVE_PATH}")
     dataset = get_test_dataset(dataset_name)
@@ -18,9 +19,12 @@ def main(dataset_name="Set5"):
     total_psnr, total_mse, total_ssim = 0, 0, 0
     with torch.no_grad():
         for lr_image, hr_image, _ in tqdm(dataset, desc="Evaluating"):
+            # load images to device
             lr_image, hr_image = lr_image.to(DEVICE), hr_image.to(DEVICE)
+            # super-resolve and clamp to valid range
             sr_image = model(lr_image.unsqueeze(0)).clamp(-1.0, 1.0).squeeze(0)
 
+            # calculate metrics
             total_psnr += calculate_psnr(hr_image, sr_image)
             total_mse += calculate_mse(hr_image, sr_image)
            # total_ssim += calculate_ssim(hr_image.unsqueeze(0), sr_image.unsqueeze(0))

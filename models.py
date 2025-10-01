@@ -21,9 +21,12 @@ class Model(nn.Module):
         x = self.upsample(x)
         return x
 
+    # will probably move to utils_model.py later if I need more helper functions for the model
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
+                # initilize conv weights with Kaiming normal
                 nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
                 if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+                    # set biases to zero
+                    nn.init.zeros_(m.bias) 

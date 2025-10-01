@@ -11,7 +11,7 @@ BATCH_SIZE = 16
 EPOCHS = 20
 LEARNING_RATE = 1e-4
 NUM_WORKERS = 4
-LOSS_FN = "L1"   # options: "L1", "MSE"
+LOSS_FN = "L1" # Options: "L1", "MSE"
 
 # DATA PATHS
 HR_TRAIN_DIR = 'data/DIV2K/DIV2K_train_HR'

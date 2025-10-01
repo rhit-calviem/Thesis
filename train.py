@@ -8,15 +8,19 @@ from models import Model
 from utils_data import TrainDataset
 from torch.utils.data import DataLoader
 
+# Training function
 def main():
     print(f"Using device: {DEVICE}")
+    # load training data
     train_dataset = TrainDataset(HR_TRAIN_DIR)
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
+    # initialize model, loss function, optimizer
     model = Model(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     criterion = nn.L1Loss() if LOSS_FN == "L1" else nn.MSELoss()
 
+    # training loop
     print("\nStarting Training")
     for epoch in range(EPOCHS):
         model.train()
@@ -24,6 +28,7 @@ def main():
         for lr_patches, hr_patches in progress_bar:
             lr_patches, hr_patches = lr_patches.to(DEVICE), hr_patches.to(DEVICE)
             
+            # forward pass, loss computation, backward pass, optimizer step
             optimizer.zero_grad()
             sr_patches = model(lr_patches)
             loss = criterion(sr_patches, hr_patches)
