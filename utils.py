@@ -113,5 +113,42 @@ def visualize_and_save_result(model, dataset_or_path, device, save_path='sr_visu
     plt.savefig(save_path)
     plt.close(fig)
 
+
+def visualize_sample(model, dataset_name="Set5", device="cpu"):
+    """Return a matplotlib Figure for a random visualization sample."""
+    from utils_data import get_test_dataset
+    import random
+    import torchvision.transforms as T
+    from PIL import Image
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
+
+    dataset = get_test_dataset(dataset_name)
+    idx = random.randint(0, len(dataset) - 1)
+    lr_image_tensor, hr_image_tensor, filename = dataset[idx]
+
+    lr_tensor = lr_image_tensor.unsqueeze(0).to(device)
+    with torch.no_grad():
+        sr_tensor = model(lr_tensor).clamp(0.0, 1.0).squeeze(0)
+
+    to_pil = T.ToPILImage()
+    lr_img = to_pil(lr_image_tensor)
+    sr_img = to_pil(sr_tensor.cpu())
+    hr_img = to_pil(hr_image_tensor)
+
+    images = [lr_img, sr_img, hr_img]
+    titles = ["Low-Res Input", "Super-Resolved", "Ground Truth"]
+
+    fig = plt.figure(figsize=(10, 4))
+    gs = gridspec.GridSpec(1, 3, width_ratios=[1, 1, 1])
+    for i, (img, title) in enumerate(zip(images, titles)):
+        ax = plt.subplot(gs[i])
+        ax.imshow(img)
+        ax.set_title(title)
+        ax.axis('off')
+    fig.suptitle(f"{dataset_name} Sample — {filename}", fontsize=12)
+    plt.tight_layout()
+    return fig
+
     
 

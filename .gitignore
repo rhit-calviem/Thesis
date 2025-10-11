@@ -5,3 +5,4 @@ data/
 *.pth
 *.png
 .vscode/
+Reports/
