@@ -8,6 +8,10 @@ from config import *
 from models import Model
 from utils_data import TrainDataset
 from torch.utils.data import DataLoader
+from torch.amp import GradScaler, autocast
+
+
+# Big change: moving to iteration-based training instead of epoch-based
 
 
 def train_model(resume_path=None):
@@ -33,16 +37,9 @@ def train_model(resume_path=None):
         milestones=LR_DROP_ITERS,
         gamma=0.5,
     )
-    try:
-        # PyTorch ≥2.2 style
-        from torch.amp import GradScaler, autocast
-        scaler = GradScaler("cuda")
-        autocast_context = lambda: autocast("cuda")
-    except Exception:
-        # PyTorch ≤2.1 fallback
-        from torch.cuda.amp import GradScaler, autocast
-        scaler = GradScaler()
-        autocast_context = lambda: autocast()
+    scaler = GradScaler("cuda")
+    autocast_context = lambda: autocast("cuda")
+
 
     start_iter = 0
     if resume_path and os.path.exists(resume_path):

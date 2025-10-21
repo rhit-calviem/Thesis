@@ -13,7 +13,7 @@ EPOCHS = None         # prefer iter-based training, but if epoch-based adapt
 LEARNING_RATE = 5e-4
 OPTIMIZER = "AdamW"
 WEIGHT_DECAY = 1e-4   # paper uses AdamW, choose small wd
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 1000 #need to make this 800k later
 LR_DROP_ITERS = [200000, 400000, 600000]
 NUM_WORKERS = 4
 LOSS_FN = "L1"  # or "MSE"
@@ -27,6 +27,7 @@ TEST_DATASETS = {
     "Set14": "data/Set14",
     "Urban100": "data/Urban100",
     "BSD100": "data/BSD100"
+    # they also use Manga109 but I'm trying to understad how to use it first
 }
 
 # SAVE PATHS

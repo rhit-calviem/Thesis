@@ -53,11 +53,10 @@ class TrainDataset(Dataset):
         if random.random() > 0.5:
             lr_img, hr_img = F.hflip(lr_img), F.hflip(hr_img)
         if random.random() > 0.5:
-            lr_img, hr_img = F.vflip(lr_img), F.vflip(hr_img)
-        if random.random() > 0.5:
-            angle = random.choice([90, 180, 270])
+            angle = random.choice([90, 270])
             lr_img, hr_img = F.rotate(lr_img, angle), F.rotate(hr_img, angle)
         return lr_img, hr_img
+
 
 
 class TestDataset(Dataset):
