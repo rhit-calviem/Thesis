@@ -1,4 +1,8 @@
-# run_pipeline_pdf.py
+# run_pipeline.py
+# ----------------------------------------------------------------------
+# Full training → evaluation → visualization → report generator
+# ----------------------------------------------------------------------
+
 import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
@@ -13,53 +17,62 @@ from eval import evaluate_model
 from models import Model
 from utils import visualize_sample
 
+
 def generate_report(model, loss_history, eval_results, upscale_factor):
     """Build a multi-page PDF report combining plots and metrics."""
-    report_path = f"Reports/ASID_Report_x{upscale_factor}.pdf"
+    report_path = f"Reports/OmniSR_Report_x{upscale_factor}.pdf"
     os.makedirs("Reports", exist_ok=True)
     styles = getSampleStyleSheet()
     doc = SimpleDocTemplate(report_path, pagesize=letter)
     elements = []
 
-    # Title
-    elements.append(Paragraph(f"<b>ASID Super-Resolution Report (×{upscale_factor})</b>", styles['Title']))
+    # --- Title ---
+    elements.append(Paragraph(f"<b>OmniSR Super-Resolution Report (×{upscale_factor})</b>", styles['Title']))
     elements.append(Spacer(1, 12))
 
-    # Model summary
+    # --- Model info ---
+    param_count = sum(p.numel() for p in model.parameters()) / 1e6
     elements.append(Paragraph(
-        f"Trained for {EPOCHS} epochs on {DEVICE} with LR={LEARNING_RATE}, Loss={LOSS_FN}.", styles['Normal']
+        f"Trained for <b>{NUM_ITERATIONS:,}</b> iterations on <b>{DEVICE}</b> "
+        f"using <b>{OPTIMIZER}</b> (LR={LEARNING_RATE}, WD={WEIGHT_DECAY})<br/>"
+        f"Loss Function: <b>{LOSS_FN}</b> &nbsp;&nbsp; "
+        f"Model Parameters: <b>{param_count:.2f}M</b>",
+        styles['Normal']
     ))
     elements.append(Spacer(1, 12))
 
-    # --- Training Loss Curve ---
-    fig, ax = plt.subplots(figsize=(5, 3))
-    ax.plot(loss_history, color='blue', linewidth=2)
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('Loss')
-    ax.set_title('Training Loss Curve')
-    loss_img = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-    fig.savefig(loss_img.name, dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    elements.append(Paragraph("<b>Training Loss Curve</b>", styles['Heading2']))
-    elements.append(RLImage(loss_img.name, width=400, height=240))
-    elements.append(Spacer(1, 12))
+    # --- Loss plot (if available) ---
+    if loss_history:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot(loss_history, color='blue', linewidth=2)
+        ax.set_xlabel('Checkpoint Index')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training Loss Curve (Smoothed)')
+        loss_img = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+        fig.savefig(loss_img.name, dpi=200, bbox_inches='tight')
+        plt.close(fig)
+        elements.append(Paragraph("<b>Training Loss Curve</b>", styles['Heading2']))
+        elements.append(RLImage(loss_img.name, width=400, height=240))
+        elements.append(Spacer(1, 12))
 
     # --- Evaluation Results ---
     elements.append(Paragraph("<b>Evaluation Metrics</b>", styles['Heading2']))
     table_text = "<br/>".join(
-        [f"{r['dataset']}: PSNR={r['psnr']:.2f} dB, SSIM={r['ssim']:.4f}, MSE={r['mse']:.6f}" for r in eval_results]
+        [f"{r['dataset']}: PSNR = {r['psnr']:.2f} dB, SSIM = {r['ssim']:.4f}, MSE = {r['mse']:.6f}"
+         for r in eval_results]
     )
     elements.append(Paragraph(table_text, styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # Plot PSNR/SSIM comparison
+    # --- PSNR/SSIM Comparison Plot ---
     fig, ax1 = plt.subplots(figsize=(6, 3))
-    x = [r["dataset"] for r in eval_results]
+    datasets = [r["dataset"] for r in eval_results]
     psnr_vals = [r["psnr"] for r in eval_results]
     ssim_vals = [r["ssim"] for r in eval_results]
-    ax1.bar(x, psnr_vals, color="skyblue", label="PSNR (dB)")
+
+    ax1.bar(datasets, psnr_vals, color="skyblue", label="PSNR (dB)")
     ax2 = ax1.twinx()
-    ax2.plot(x, ssim_vals, color="orange", marker="o", label="SSIM")
+    ax2.plot(datasets, ssim_vals, color="orange", marker="o", label="SSIM")
     ax1.set_ylabel("PSNR (dB)")
     ax2.set_ylabel("SSIM")
     ax1.set_title("Evaluation Performance Across Datasets")
@@ -86,8 +99,9 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
     return report_path
 
 
-def main():
-    model, loss_history = train_model()
+def main(resume_path=None):
+    """End-to-end pipeline: train, evaluate, report."""
+    model, loss_history = train_model(resume_path=resume_path)
 
     eval_results = []
     for name in TEST_DATASETS:
