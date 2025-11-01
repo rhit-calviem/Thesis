@@ -5,7 +5,7 @@ from itertools import cycle
 import os
 
 from config import *
-from models import Model
+from models import OmniSR
 from utils_data import TrainDataset
 from torch.utils.data import DataLoader
 from torch.amp import GradScaler, autocast
@@ -29,7 +29,7 @@ def train_model(resume_path=None):
     )
 
     # Initialize model, loss, optimizer, scheduler
-    model = Model(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
+    model = OmniSR(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
     criterion = nn.L1Loss() if LOSS_FN == "L1" else nn.MSELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(

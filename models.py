@@ -33,6 +33,7 @@
 
 import torch
 import torch.nn as nn
+from config import NUM_BLOCKS as num_osag
 
 # Squeeze-and-Excitation Layer
 class SELayer(nn.Module):
@@ -93,3 +94,46 @@ class LocalConvBlock(nn.Module):   # PWConv -> DWConv -> SE -> PWConv + residual
         out = self.se(out)
         out = self.pw2(out)
         return out + identity            # skip connection
+
+# OSAG
+class OSAG(nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.lcb = LocalConvBlock(channels)
+
+    def forward(self, x):
+        res = self.lcb(x)
+        return res + x  # skip connection around the block
+
+
+# Omni-SR model
+class OmniSR(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, channels=64, upscale_factor=4, num_osag=5):
+        super().__init__()
+
+        # Shallow feature extraction
+        self.shallow = nn.Conv2d(in_channels, channels, 3, 1, 1)
+
+        # Deep feature extraction with multiple OSAG blocks
+        self.osag_blocks = nn.Sequential(*[OSAG(channels) for _ in range(num_osag)])
+
+        # Convolution to aggregate deep features
+        self.conv_agg = nn.Conv2d(channels, channels, 3, 1, 1)
+
+        # Reconstruction (PixelShuffle upsampling)
+        self.reconstruction = nn.Sequential(
+            nn.Conv2d(channels, channels * (upscale_factor ** 2), 3, 1, 1),
+            nn.PixelShuffle(upscale_factor),
+            nn.Conv2d(channels, out_channels, 3, 1, 1)
+        )
+
+    def forward(self, x):
+        x0 = self.shallow(x)
+
+        x_deep = self.osag_blocks(x0)
+        x_deep = self.conv_agg(x_deep)
+
+        x_fused = x0 + x_deep
+
+        out = self.reconstruction(x_fused)
+        return out

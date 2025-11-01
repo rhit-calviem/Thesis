@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 from config import *
-from models import Model
+from models import OmniSR
 from utils_data import get_test_dataset
 from utils import calculate_psnr, calculate_mse, calculate_ssim
 
@@ -36,7 +36,7 @@ def evaluate_model(model, dataset_name="Set5"):
 
 
 if __name__ == "__main__":
-    model = Model(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
+    model = OmniSR(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
     model.load_state_dict(torch.load(MODEL_SAVE_PATH, map_location=DEVICE))
     for name in TEST_DATASETS:
         result = evaluate_model(model, name)

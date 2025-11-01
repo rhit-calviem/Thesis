@@ -1,13 +1,13 @@
 import sys
 import torch
 from config import *
-from models import Model
+from models import OmniSR
 from utils_data import get_test_dataset
 from utils import visualize_and_save_result
 
 def main(source=None):
     # Load model, dataset or image, visualize and save result
-    model = Model(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
+    model = OmniSR(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
     model.load_state_dict(torch.load(MODEL_SAVE_PATH, map_location=DEVICE))
     model.eval()
 
