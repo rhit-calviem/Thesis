@@ -26,10 +26,12 @@ class SELayer(nn.Module):
     .view(b, c) then reshapes this into a 2D tensor of shape [b, c]. This vector y is now a "channel descriptor" that represents the global information for each channel.
 
     FC
-    First nn.Linear (Reduction): The vector y (shape [b, c]) is passed through the first linear layer, which reduces its dimension from in_channels to in_channels // reduction. This is a "bottleneck" that saves computation and helps in learning a more generalized relationship.
+    First nn.Linear (Reduction): The vector y (shape [b, c]) is passed through the first linear layer, which reduces its dimension from in_channels to in_channels // reduction. 
+    This is a "bottleneck" that saves computation and helps in learning a more generalized relationship.
     nn.ReLU (Non-linearity): This activation function allows the model to learn a non-linear interaction between the channels.
     Second nn.Linear (Expansion): The vector is passed through the second linear layer, which expands the dimension back up to the original in_channels.
-    nn.Sigmoid (Gating): The final sigmoid activation squashes the output values for each channel to be in the range of 0 to 1. This output y (now shape [b, c]) represents the learned "importance" for each channel. A value of 1.0 means "very important," and 0.0 means "not important."
+    nn.Sigmoid (Gating): The final sigmoid activation squashes the output values for each channel to be in the range of 0 to 1.
+    This output y (now shape [b, c]) represents the learned "importance" for each channel. A value of 1.0 means "very important," and 0.0 means "not important."
 
     .view(b, c, 1, 1) - This final step applies the learned "importance" weights to the original feature map.
     The weights vector y (shape [b, c]) is first reshaped back to [b, c, 1, 1].
@@ -101,7 +103,7 @@ class OmniSR(nn.Module):
 
         self.osag_blocks = nn.Sequential(*[OSAG(channels) for _ in range(num_osag)]) # Deep feature extraction
 
-        self.conv_agg = nn.Conv2d(channels, channels, 3, 1, 1) # Feature aggregation 3x3 conv in cascading manner after oSAG blocks
+        self.conv_agg = nn.Conv2d(channels, channels, 3, 1, 1) # Feature aggregation 3x3 conv in cascading manner after OSAG blocks
 
         self.reconstruction = nn.Sequential( # Reconstruction
             nn.Conv2d(channels, channels * (upscale_factor ** 2), 3, 1, 1),
