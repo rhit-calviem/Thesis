@@ -5,6 +5,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 import tempfile
 import os
 import torch
+import glob
 
 from config import *
 from train import train_model
@@ -14,17 +15,18 @@ from utils import visualize_sample
 
 
 def generate_report(model, loss_history, eval_results, upscale_factor):
+    """Build a multi-page PDF report combining plots and metrics."""
     report_path = f"Reports/OmniSR_Report_x{upscale_factor}.pdf"
     os.makedirs("Reports", exist_ok=True)
     styles = getSampleStyleSheet()
     doc = SimpleDocTemplate(report_path, pagesize=letter)
     elements = []
 
-    # Title
+    # --- Title ---
     elements.append(Paragraph(f"<b>OmniSR Super-Resolution Report (×{upscale_factor})</b>", styles['Title']))
     elements.append(Spacer(1, 12))
 
-    # Model info
+    # --- Model info ---
     param_count = sum(p.numel() for p in model.parameters()) / 1e6
     elements.append(Paragraph(
         f"Trained for <b>{NUM_ITERATIONS:,}</b> iterations on <b>{DEVICE}</b> "
@@ -35,7 +37,7 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
     ))
     elements.append(Spacer(1, 12))
 
-    # Loss plot (if available)
+    # --- Loss plot (if available) ---
     if loss_history:
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.plot(loss_history, color='blue', linewidth=2)
@@ -49,7 +51,7 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
         elements.append(RLImage(loss_img.name, width=400, height=240))
         elements.append(Spacer(1, 12))
 
-    # Evaluation Results
+    # --- Evaluation Results ---
     elements.append(Paragraph("<b>Evaluation Metrics</b>", styles['Heading2']))
     table_text = "<br/>".join(
         [f"{r['dataset']}: PSNR = {r['psnr']:.2f} dB, SSIM = {r['ssim']:.4f}, MSE = {r['mse']:.6f}"
@@ -58,7 +60,7 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
     elements.append(Paragraph(table_text, styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # PSNR/SSIM Comparison Plot
+    # --- PSNR/SSIM Comparison Plot ---
     fig, ax1 = plt.subplots(figsize=(6, 3))
     datasets = [r["dataset"] for r in eval_results]
     psnr_vals = [r["psnr"] for r in eval_results]
@@ -77,7 +79,7 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
     elements.append(RLImage(perf_img.name, width=420, height=240))
     elements.append(Spacer(1, 12))
 
-    # Sample Visualizations
+    # --- Sample Visualizations ---
     elements.append(Paragraph("<b>Visualizations</b>", styles['Heading2']))
     for ds in TEST_DATASETS:
         fig = visualize_sample(model, dataset_name=ds, device=DEVICE)
@@ -93,16 +95,31 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
     return report_path
 
 
-def main(resume_path=None):
-    model, loss_history = train_model(resume_path=resume_path)
+def main():
+    # 1. Automatically find the latest checkpoint in the Models folder
+    checkpoints = glob.glob(os.path.join(MODEL_SAVE_DIR, "iter_*.pth"))
+    
+    latest_ckpt = None
+    if checkpoints:
+        # Sort by iteration number to find the highest one
+        # Assumes format: Models/iter_50000.pth
+        checkpoints.sort(key=lambda x: int(os.path.basename(x).split('_')[1].split('.')[0]))
+        latest_ckpt = checkpoints[-1]
+        print(f"--- Found latest checkpoint: {latest_ckpt} ---")
+    else:
+        print("--- No checkpoint found. Starting training from scratch. ---")
 
+    # 2. Pass the latest checkpoint to the training function
+    model, loss_history = train_model(resume_path=latest_ckpt)
+
+    # 3. Proceed to evaluation and report generation
     eval_results = []
     for name in TEST_DATASETS:
         res = evaluate_model(model, name)
         eval_results.append(res)
-        print(res)
-
+    
     generate_report(model, loss_history, eval_results, UPSCALE_FACTOR)
+
 
 if __name__ == "__main__":
     main()

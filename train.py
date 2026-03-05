@@ -10,10 +10,7 @@ from utils_data import TrainDataset
 from torch.utils.data import DataLoader
 from torch.amp import GradScaler, autocast
 
-
 # Big change: moving to iteration-based training instead of epoch-based
-
-
 def train_model(resume_path=None):
     print(f"Using device: {DEVICE}")
 
@@ -73,7 +70,6 @@ def train_model(resume_path=None):
         with autocast_context():
             sr_patches = model(lr_patches)
             loss = criterion(sr_patches, hr_patches)
-
 
         scaler.scale(loss).backward()
         scaler.step(optimizer)

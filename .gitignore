@@ -6,3 +6,9 @@ data/
 *.png
 .vscode/
 Reports/
+Logs/
+Models/
+model_x2/
+model_x3/
+model_x4/
+.venv/

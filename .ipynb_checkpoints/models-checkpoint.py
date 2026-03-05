@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from config import NUM_BLOCKS as num_osag
-import torchvision.models as tvm
 
 # Squeeze-and-Excitation Layer
 class SELayer(nn.Module):
@@ -118,8 +117,8 @@ class OSA(nn.Module): # Omni Self-Attention (OSA) block.
         # Spatial attention map: Softmax(Q_s K_s^T) <- (HW×HW)
         # Diagram: Q_s x K_s → S
         attn_s = (Q_s @ K_s.transpose(-1, -2)) * self.scale
-        # attn_s = attn_s.softmax(dim=-1)
-        attn_s = attn_s.float().softmax(dim=-1).to(Q_s.dtype)
+        attn_s = attn_s.softmax(dim=-1)
+
         # Spatial aggregation: Y_s = (SpatialAttn) x V_s
         Y_s = attn_s @ V_s # do I ever use this?
 
@@ -132,8 +131,7 @@ class OSA(nn.Module): # Omni Self-Attention (OSA) block.
         # Channel attn map: Softmax(K_c Q_c^T) <- (C×C)
         # Diagram: K_c x Q_c -> S
         attn_c = (K_c @ Q_c.transpose(-1, -2)) * self.scale
-        # attn_c = attn_c.softmax(dim=-1)
-        attn_c = attn_c.float().softmax(dim=-1).to(K_c.dtype)
+        attn_c = attn_c.softmax(dim=-1)
 
         # Channel aggregation: Y_c (C×HW × HW×C)
         y_c = attn_c @ V_c # (B, h, d, HW)
@@ -339,12 +337,7 @@ class ESA(nn.Module): # ESA block taken from the "Residual Local Feature Network
         out = self.conv2(out)
         out = self.sigmoid(out)
         return identity * out
-'''   
-Channel attention addresses the limitation of channel attention (like SE) which loses positional information during global pooling. CA decomposes spatial attention into two 
-1D feature encodings along the height and width axes separately, preserving precise coordinate information. It pools the input along each spatial direction independently, 
-encodes them through a shared transformation, then generates separate attention maps for height and width directions. The final output recalibrates the input feature map with both 
-channel importance and spatial location awareness. This is particularly beneficial for super-resolution tasks where knowing "where" features are located is as important as knowing "what" features exist
-'''
+ 
 
 # OSAG
 class OSAG(nn.Module):
@@ -353,24 +346,19 @@ class OSAG(nn.Module):
         self.lcb = LocalConvBlock(channels)
         self.meso = MesoOSABlock(channels)
         self.glob = GlobalOSABlock(channels)
-        
-        self.conv_post = nn.Conv2d(channels, channels, 3, 1, 1) 
         self.esa = ESA(channels)
 
     def forward(self, x):
-        identity = x 
-        
-        out = self.lcb(x)
-        out = self.meso(out)
-        res = self.glob(out)
-        fused = res + identity
-        out = self.conv_post(fused)
-        out = self.esa(out)
-        return out
+        identity = x  # save for skip connection
+        x = self.lcb(x)
+        x = self.meso(x)
+        x = self.glob(x)
+        x = self.esa(x)
+        return x + identity # add skip connection
 
 # Omni-SR model
 class OmniSR(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, channels=64, upscale_factor=4, num_osag=5):
+    def __init__(self, in_channels=3, out_channels=3, channels=64, upscale_factor=2, num_osag=1):
         super().__init__()
 
         self.shallow = nn.Conv2d(in_channels, channels, 3, 1, 1) # Shallow feature extraction
@@ -392,6 +380,7 @@ class OmniSR(nn.Module):
         x_fused = x0 + x_deep
         out = self.reconstruction(x_fused)
         return out
+    
     '''
     PixelShuffle(upscale_factor) - This layer rearranges elements in a tensor of shape (C * r^2, H, W) to a tensor of shape (C, H * r, W * r), where r is the upscale factor.
     For this model, it takes the output from the preceding convolutional layer, which has been expanded to have channels equal to channels * (upscale_factor ** 2), 

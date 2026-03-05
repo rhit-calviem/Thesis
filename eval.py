@@ -22,9 +22,9 @@ def evaluate_model(model, dataset_name="Set5"):
             sr_image = (sr_image + 1.0) / 2.0
             hr_image = (hr_image + 1.0) / 2.0
 
-            total_psnr += calculate_psnr(hr_image, sr_image)
-            total_mse += calculate_mse(hr_image, sr_image)
-            total_ssim += calculate_ssim(hr_image, sr_image)
+            total_psnr += calculate_psnr(hr_image, sr_image, crop_border=UPSCALE_FACTOR)
+            total_mse += calculate_mse(hr_image, sr_image, crop_border=UPSCALE_FACTOR)
+            total_ssim += calculate_ssim(hr_image, sr_image, crop_border=UPSCALE_FACTOR)
 
     n = len(dataset)
     return {

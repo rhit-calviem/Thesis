@@ -1,8 +1,3 @@
-# utils.py
-# ---------------------------------------------------------------------
-# Utility functions for metrics, visualization, and image conversions
-# ---------------------------------------------------------------------
-
 import os
 import math
 import random
@@ -19,15 +14,7 @@ import matplotlib.gridspec as gridspec
 
 from config import UPSCALE_FACTOR
 
-
-# ---------------------------------------------------------------------
-# === Color space conversions ===
-# ---------------------------------------------------------------------
 def rgb_to_y_channel(tensor: torch.Tensor) -> torch.Tensor:
-    """
-    Convert an RGB image tensor (C,H,W) in [0,1] to a single-channel Y (luminance) tensor.
-    Uses ITU-R BT.601 coefficients.
-    """
     if tensor.ndim != 3 or tensor.size(0) != 3:
         raise ValueError("Input must be RGB tensor (3,H,W)")
 
@@ -37,15 +24,7 @@ def rgb_to_y_channel(tensor: torch.Tensor) -> torch.Tensor:
     y = 0.299 * r + 0.587 * g + 0.114 * b
     return y
 
-
-# ---------------------------------------------------------------------
-# === Evaluation Metrics ===
-# ---------------------------------------------------------------------
 def calculate_psnr(original: torch.Tensor, compressed: torch.Tensor) -> float:
-    """
-    Compute PSNR (Peak Signal-to-Noise Ratio) between two [0,1] tensors.
-    Only Y channel is used.
-    """
     original_y = rgb_to_y_channel(original).cpu().numpy()
     compressed_y = rgb_to_y_channel(compressed).cpu().numpy()
     mse = np.mean((original_y - compressed_y) ** 2)
@@ -55,19 +34,12 @@ def calculate_psnr(original: torch.Tensor, compressed: torch.Tensor) -> float:
 
 
 def calculate_mse(original: torch.Tensor, compressed: torch.Tensor) -> float:
-    """
-    Compute MSE (Mean Squared Error) on the Y channel between two [0,1] tensors.
-    """
     original_y = rgb_to_y_channel(original).cpu().numpy()
     compressed_y = rgb_to_y_channel(compressed).cpu().numpy()
     return np.mean((original_y - compressed_y) ** 2)
 
 
 def calculate_ssim(img1: torch.Tensor, img2: torch.Tensor, window_size=11, C1=0.01**2, C2=0.03**2) -> float:
-    """
-    Compute SSIM (Structural Similarity Index) on Y channel.
-    Implementation uses a sliding window with mean and variance pooling.
-    """
     img1_y = rgb_to_y_channel(img1).unsqueeze(0)  # (1,1,H,W)
     img2_y = rgb_to_y_channel(img2).unsqueeze(0)
 
@@ -84,10 +56,6 @@ def calculate_ssim(img1: torch.Tensor, img2: torch.Tensor, window_size=11, C1=0.
     )
     return ssim_map.mean().item()
 
-
-# ---------------------------------------------------------------------
-# === Visualization Helpers ===
-# ---------------------------------------------------------------------
 def visualize_and_save_result(model, dataset_or_path, device, save_path='sr_visualization.png'):
     """
     Visualize SR model output.
