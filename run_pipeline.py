@@ -1,3 +1,5 @@
+import glob
+
 import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
@@ -14,6 +16,7 @@ from utils import visualize_sample
 
 
 def generate_report(model, loss_history, eval_results, upscale_factor):
+    """Build a multi-page PDF report combining plots and metrics."""
     report_path = f"Reports/OmniSR_Report_x{upscale_factor}.pdf"
     os.makedirs("Reports", exist_ok=True)
     styles = getSampleStyleSheet()
@@ -94,7 +97,21 @@ def generate_report(model, loss_history, eval_results, upscale_factor):
 
 
 def main(resume_path=None):
-    model, loss_history = train_model(resume_path=resume_path)
+    """End-to-end pipeline: train, evaluate, report."""
+
+    checkpoints = glob.glob(os.path.join(MODEL_SAVE_DIR, "iter_*.pth"))
+    
+    latest_ckpt = None
+    if checkpoints:
+        # Sort by iteration number to find the highest one
+        # Assumes format: Models/iter_50000.pth
+        checkpoints.sort(key=lambda x: int(os.path.basename(x).split('_')[1].split('.')[0]))
+        latest_ckpt = checkpoints[-1]
+        print(f"--- Found latest checkpoint: {latest_ckpt} ---")
+    else:
+        print("--- No checkpoint found. Starting training from scratch. ---")
+
+    model, loss_history = train_model(resume_path=latest_ckpt)
 
     eval_results = []
     for name in TEST_DATASETS:
@@ -103,6 +120,7 @@ def main(resume_path=None):
         print(res)
 
     generate_report(model, loss_history, eval_results, UPSCALE_FACTOR)
+
 
 if __name__ == "__main__":
     main()
