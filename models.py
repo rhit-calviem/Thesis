@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from config import NUM_BLOCKS as num_osag
 import torchvision.models as tvm
+from modification import CoordinateAttention
 
 # Squeeze-and-Excitation Layer
 class SELayer(nn.Module):
@@ -356,6 +357,7 @@ class OSAG(nn.Module):
         
         self.conv_post = nn.Conv2d(channels, channels, 3, 1, 1) 
         self.esa = ESA(channels)
+        # self.ca = CoordinateAttention(channels)
 
     def forward(self, x):
         identity = x 
@@ -366,6 +368,7 @@ class OSAG(nn.Module):
         fused = res + identity
         out = self.conv_post(fused)
         out = self.esa(out)
+        # out = self.ca(out)
         return out
 
 # Omni-SR model

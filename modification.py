@@ -20,7 +20,7 @@ class CoordinateAttention(nn.Module):
         
         # Separate convolutions to generate attention weights for height and width
         self.conv_h = nn.Conv2d(reduced_channels, in_channels, kernel_size=1, stride=1, padding=0)
-        self.conv_w = nn.Conv2d(reduced_channels, in_channels, kernel_size=1, stride=0)
+        self.conv_w = nn.Conv2d(reduced_channels, in_channels, kernel_size=1, stride=1)
         
     def forward(self, x):
         identity = x  # Save input for final multiplication
@@ -82,9 +82,7 @@ class VGGPerceptualLoss(nn.Module):
         # Your pipeline uses [-1, 1]. VGG expects ImageNet-normalized [0, 1].
         sr_norm = (sr * 0.5 + 0.5 - self.mean) / self.std
         hr_norm = (hr * 0.5 + 0.5 - self.mean) / self.std
-        return F.l1_loss(self.feature_extractor(sr_norm),
-                         self.feature_extractor(hr_norm))
-
+        return F.l1_loss(self.feature_extractor(sr_norm), self.feature_extractor(hr_norm))
 
 class Discriminator(nn.Module):
     """

@@ -6,7 +6,8 @@ from tqdm import tqdm
 import os
 
 from config import *
-from models import OmniSR, Discriminator, VGGPerceptualLoss
+from models import OmniSR
+from modification import Discriminator, VGGPerceptualLoss
 from utils_data import TrainDataset
 
 
@@ -24,7 +25,7 @@ def train_gan(pretrained_generator_path: str):
     data_iter = iter(cycle(train_loader))
 
     # --- Models ---
-    generator = OmniSR(upscale_factor=UPSCALE_FACTOR, num_osag=NUM_BLOCKS).to(DEVICE)
+    generator = OmniSR(upscale_factor=UPSCALE_FACTOR).to(DEVICE)
     discriminator = Discriminator().to(DEVICE)
 
     # Load the Phase 1 pre-trained weights — critical for stable GAN training
@@ -130,14 +131,11 @@ def train_gan(pretrained_generator_path: str):
 
 
 if __name__ == "__main__":
-    import glob
-    # Find the best Phase 1 checkpoint automatically
-    checkpoints = sorted(
-        glob.glob(os.path.join(MODEL_SAVE_DIR, "iter_*.pth")),
-        key=lambda x: int(os.path.basename(x).split('_')[1].split('.')[0])
-    )
-    if not checkpoints:
-        raise FileNotFoundError("No Phase 1 checkpoint found. Run train.py first.")
-    best_ckpt = checkpoints[-1]
+    # Manually specify Phase 1 checkpoint
+    best_ckpt = "Models/replication/models_5/x2/iter_800000.pth"
+
+    if not os.path.exists(best_ckpt):
+        raise FileNotFoundError(f"Checkpoint not found: {best_ckpt}")
+
     print(f"Starting GAN fine-tuning from: {best_ckpt}")
     train_gan(best_ckpt)
