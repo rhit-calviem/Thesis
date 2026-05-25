@@ -11,7 +11,7 @@ import torch
 from config import *
 from train import train_model
 from eval import evaluate_model
-from models import OmniSR
+from Architecture.models_trial2 import OmniSR
 from utils import visualize_sample
 
 

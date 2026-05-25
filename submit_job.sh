@@ -3,7 +3,7 @@
 #SBATCH --output=Logs/job_%j.log
 #SBATCH --nodelist=gus
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
@@ -12,10 +12,12 @@
 # needed to move to the directory
 cd /home/calviem/Thesis
 
+uv run nvidia-smi
 # run code
 hostname
 uv run which python
 uv run which python3
 # uv run python run_pipeline.py
-# uv run python3 individual_image.py
-uv run python3 train_gan.py
+uv run python3 images_visualizations.py
+# uv run python3 train_gan.py
+# uv run python3 gan_visualization.py

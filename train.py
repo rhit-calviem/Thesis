@@ -5,7 +5,7 @@ from itertools import cycle
 import os
 
 from config import *
-from models import OmniSR
+from Architecture.models_trial import OmniSR
 from utils_data import TrainDataset
 from torch.utils.data import DataLoader
 from torch.amp import GradScaler, autocast

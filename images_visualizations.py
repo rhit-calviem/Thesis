@@ -6,7 +6,7 @@ import os
 import time
 
 from config import DEVICE, UPSCALE_FACTOR
-from models import OmniSR
+from Architecture.models_trial3 import OmniSR
 
 
 def measure_latency(model, input_tensor, runs=50, warmup=10):
@@ -89,7 +89,7 @@ def predict_and_compare(image_path, model_path):
     # --- SAVE OUTPUTS ---
     os.makedirs('Outputs', exist_ok=True)
 
-    sr_img.save('Outputs/prediction_only.png')
+    sr_img.save('Outputs/building_orig.png')
     print("Saved pure prediction to Outputs/prediction_only.png")
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 10))
@@ -99,7 +99,7 @@ def predict_and_compare(image_path, model_path):
     axes[0].axis('off')
 
     axes[1].imshow(bicubic_img)
-    axes[1].set_title("Bicubic Upscale (Base)")
+    axes[1].set_title("Bicubic Upscale")
     axes[1].axis('off')
 
     axes[2].imshow(sr_img)
@@ -115,8 +115,10 @@ def predict_and_compare(image_path, model_path):
 
 if __name__ == "__main__":
 
-    INPUT_IMAGE_PATH = "data/Urban100/image_SRF_2/img_062_SRF_2_LR.png"
-    CHECKPOINT_PATH = "Models/replication/models_5/x2/iter_800000.pth"
+    INPUT_IMAGE_PATH = "data/Urban100/image_SRF_2/img_005_SRF_2_LR.png"
+    # CHECKPOINT_PATH = "Models/replication/models_5/x2/iter_800000.pth"
+    # CHECKPOINT_PATH = "Models/CA/iter_800000.pth"
+    CHECKPOINT_PATH = "Models/Trial3/iter_800000.pth"
 
     if os.path.exists(INPUT_IMAGE_PATH):
         predict_and_compare(INPUT_IMAGE_PATH, CHECKPOINT_PATH)

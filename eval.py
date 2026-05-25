@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 from config import *
-from models import OmniSR
+from Architecture.models_trial2 import OmniSR
 from utils_data import get_test_dataset
 from utils import calculate_psnr, calculate_mse, calculate_ssim
 

@@ -349,15 +349,16 @@ channel importance and spatial location awareness. This is particularly benefici
 
 # OSAG
 class OSAG(nn.Module):
-    def __init__(self, channels):
+    # def __init__(self, channels):
+    def __init__(self, channels, depth = 2):
         super().__init__()
         self.lcb = LocalConvBlock(channels)
         self.meso = MesoOSABlock(channels)
         self.glob = GlobalOSABlock(channels)
-        
+
         self.conv_post = nn.Conv2d(channels, channels, 3, 1, 1) 
-        self.esa = ESA(channels)
-        # self.ca = CoordinateAttention(channels)
+        # self.esa = ESA(channels)
+        self.ca = CoordinateAttention(channels)
 
     def forward(self, x):
         identity = x 
@@ -367,8 +368,8 @@ class OSAG(nn.Module):
         res = self.glob(out)
         fused = res + identity
         out = self.conv_post(fused)
-        out = self.esa(out)
-        # out = self.ca(out)
+        # out = self.esa(out)
+        out = self.ca(out)
         return out
 
 # Omni-SR model
